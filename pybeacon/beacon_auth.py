@@ -1,4 +1,5 @@
 import json
+import sys
 import requests
 import pickle
 from requests_html import HTMLSession
@@ -47,6 +48,11 @@ def _do_login(username, password, beacon_url):
         del data
 
         if response.status_code == 200:
+            jsonStr = response.html.find('script#modelJson', first=True).text
+            # The JSON data in this script tag is bounded by '&#13;' and some whitespace
+            jsonParsed = json.loads(jsonStr[jsonStr.find('{'):jsonStr.rfind('}')+1])
+            if 'errorMessage' in jsonParsed:
+                raise Exception(jsonParsed['errorMessage'])
             # Get OAuth redirectUrl
             oauthRedirectUrl = response.html.find('form', first=True).attrs['action']
             # Get OAuth callback form hidden fields
@@ -65,13 +71,18 @@ def _do_login(username, password, beacon_url):
         else:
             raise requests.exceptions.RequestException
 
-    except requests.exceptions.RequestException as e:
-        print(e)
+    except Exception as e:
+        print("An error has occured: ", e, file=sys.stderr)
+        return None
 
 
 def get_api_token(username, password, beacon_url='https://beacon.ses.nsw.gov.au'):
     response = _do_login(username, password, beacon_url)
-
+    
+    # Some error has occured
+    if response is None:
+        return None
+    
     bearer_token = {
         'accessToken': response.html.search('self.accessToken = \'{}\'')[0],
         'expiresAt': response.html.search('self.expiresAt = \'{}\'')[0]
