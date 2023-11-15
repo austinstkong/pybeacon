@@ -48,6 +48,8 @@ headers = {"Authorization": "Bearer " + token.get('accessToken')}
 response = requests.get('https://apibeacon.ses.nsw.gov.au/Api/v1/Jobs/xxxxxx', headers=headers)
 ```
 
+If the login process fails, the token will be returned as `None`.
+
 #### `beacon_auth.get_frontend_cookies`
 
 To make a request to the Beacon frontend, first acquire session cookies and unpickle them.
